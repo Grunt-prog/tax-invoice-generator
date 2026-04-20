@@ -1,7 +1,6 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:open_filex/open_filex.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
@@ -12,9 +11,6 @@ class PdfGenerator {
   /// Generate and save a tax invoice PDF to Downloads folder
   static Future<void> generateInvoice(InvoiceModel invoice) async {
     try {
-      // Request storage permissions
-      await _requestStoragePermission();
-
       // Create PDF document
       final pdf = pw.Document();
 
@@ -34,15 +30,15 @@ class PdfGenerator {
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(now);
       final filename = 'Invoice_${invoice.invoiceNo}_$timestamp.pdf';
 
-      // Get Downloads directory
-      final downloadsDir = await _getDownloadsDirectory();
-      final filePath = '${downloadsDir.path}/$filename';
+      // Get the save directory (no permissions needed for app-specific storage)
+      final saveDir = await _getSaveDirectory();
+      final filePath = '${saveDir.path}/$filename';
 
       // Save PDF to file
       final file = File(filePath);
       await file.writeAsBytes(await pdf.save());
 
-      // Optionally open the PDF
+      // Open the PDF
       await OpenFilex.open(filePath);
     } catch (e) {
       rethrow;
@@ -437,39 +433,24 @@ class PdfGenerator {
     );
   }
 
-  /// Request storage permissions from the user
-  static Future<void> _requestStoragePermission() async {
-    // For Android 11+, we need MANAGE_EXTERNAL_STORAGE to write to Downloads
+  /// Get the directory to save invoices.
+  /// Uses app-specific external storage which requires NO runtime permissions
+  /// on any Android version (including Android 10+ with scoped storage).
+  static Future<Directory> _getSaveDirectory() async {
     if (Platform.isAndroid) {
-      final androidVersion = int.parse(Platform.version.split('.')[0]);
-      if (androidVersion >= 30) { // Android 11+
-        final status = await Permission.manageExternalStorage.request();
-        if (status.isGranted) {
-          return;
+      // App-specific external storage: /storage/emulated/0/Android/data/<pkg>/files/
+      // This does NOT require any runtime permissions on any Android version.
+      final directory = await getExternalStorageDirectory();
+      if (directory != null) {
+        final invoicesDir = Directory('${directory.path}/Invoices');
+        if (!await invoicesDir.exists()) {
+          await invoicesDir.create(recursive: true);
         }
+        return invoicesDir;
       }
     }
 
-    // Fallback to storage permission
-    final status = await Permission.storage.request();
-
-    if (status.isDenied) {
-      throw Exception('Storage permission denied');
-    } else if (status.isPermanentlyDenied) {
-      throw Exception('Storage permission permanently denied. Enable in app settings.');
-    }
-  }
-
-  /// Get the Downloads directory
-  static Future<Directory> _getDownloadsDirectory() async {
-    // Try to get Downloads directory from getExternalStorageDirectories
-    final directories = await getExternalStorageDirectories(type: StorageDirectory.downloads);
-
-    if (directories != null && directories.isNotEmpty) {
-      return directories.first;
-    }
-
-    // Fallback to Documents if Downloads not available
+    // Fallback for iOS or if external storage is unavailable
     return await getApplicationDocumentsDirectory();
   }
 }
