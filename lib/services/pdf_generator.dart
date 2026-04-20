@@ -439,6 +439,18 @@ class PdfGenerator {
 
   /// Request storage permissions from the user
   static Future<void> _requestStoragePermission() async {
+    // For Android 11+, we need MANAGE_EXTERNAL_STORAGE to write to Downloads
+    if (Platform.isAndroid) {
+      final androidVersion = int.parse(Platform.version.split('.')[0]);
+      if (androidVersion >= 30) { // Android 11+
+        final status = await Permission.manageExternalStorage.request();
+        if (status.isGranted) {
+          return;
+        }
+      }
+    }
+
+    // Fallback to storage permission
     final status = await Permission.storage.request();
 
     if (status.isDenied) {
