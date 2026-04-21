@@ -372,9 +372,11 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(
+              'Error: ${e.toString()}\n${st.toString().substring(0, st.toString().length > 400 ? 400 : st.toString().length)}',
+            ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 10),
           ),
         );
       }

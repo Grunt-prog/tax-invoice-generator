@@ -102,8 +102,8 @@ class PdfGenerator {
         _tcPad(''),
         pw.Container(
           padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 4),
-          child: pw.Text('Sgst',
-              style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
+          child: pw.Text('SGST',
+              style: const pw.TextStyle(fontSize: 9)),
         ),
         _tcPad(''),
         _tcPad(''),
@@ -116,8 +116,8 @@ class PdfGenerator {
         _tcPad(''),
         pw.Container(
           padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 20),
-          child: pw.Text('Cgst',
-              style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
+          child: pw.Text('CGST',
+              style: const pw.TextStyle(fontSize: 9)),
         ),
         _tcPad(''),
         _tcPad(''),
@@ -131,8 +131,8 @@ class PdfGenerator {
         _tcPad(''),
         pw.Container(
           padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 40),
-          child: pw.Text('Igst',
-              style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
+          child: pw.Text('IGST',
+              style: const pw.TextStyle(fontSize: 9)),
         ),
         _tcPad(''),
         _tcPad(''),
@@ -375,16 +375,19 @@ class PdfGenerator {
         ),
       ),
       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-      child: pw.RichText(
-        text: pw.TextSpan(children: [
-          pw.TextSpan(
-              text: 'Tax Amount (in words) :  ',
-              style: const pw.TextStyle(fontSize: 8)),
-          pw.TextSpan(
-              text: invoice.taxAmountInWords ?? '',
-              style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold, fontSize: 9)),
-        ]),
+      child: pw.Row(
+        children: [
+          pw.Text(
+            'Tax Amount (in words) :  ',
+            style: const pw.TextStyle(fontSize: 8),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              invoice.taxAmountInWords ?? '',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            ),
+          ),
+        ],
       ),
     ));
 
@@ -560,15 +563,19 @@ class PdfGenerator {
 
   static pw.Widget _bankRow(String label, String value) => pw.Padding(
         padding: const pw.EdgeInsets.only(bottom: 2),
-        child: pw.RichText(
-          text: pw.TextSpan(children: [
-            pw.TextSpan(
-                text: '$label : ', style: const pw.TextStyle(fontSize: 8)),
-            pw.TextSpan(
-                text: value,
-                style:
-                    pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)),
-          ]),
+        child: pw.Row(
+          children: [
+            pw.Text(
+              '$label : ',
+              style: const pw.TextStyle(fontSize: 8),
+            ),
+            pw.Expanded(
+              child: pw.Text(
+                value,
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
+              ),
+            ),
+          ],
         ),
       );
 
