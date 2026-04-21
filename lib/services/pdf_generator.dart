@@ -22,7 +22,7 @@ class PdfGenerator {
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(20),
+        margin: const pw.EdgeInsets.all(14),
         theme: theme,
         build: (context) => _buildInvoiceContent(computed),
       ),
@@ -103,7 +103,7 @@ class PdfGenerator {
       lineItemRows.add(pw.TableRow(children: [
         _tcPad(''),
         pw.Container(
-          padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 20),
+          padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 4),
           child: pw.Text('CGST',
               style: const pw.TextStyle(fontSize: 9)),
         ),
@@ -118,7 +118,7 @@ class PdfGenerator {
       lineItemRows.add(pw.TableRow(children: [
         _tcPad(''),
         pw.Container(
-          padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 40),
+          padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 20),
           child: pw.Text('IGST',
               style: const pw.TextStyle(fontSize: 9)),
         ),
@@ -175,7 +175,7 @@ class PdfGenerator {
         style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
       ),
     ));
-    pageWidgets.add(pw.SizedBox(height: 4));
+    pageWidgets.add(pw.SizedBox(height: 2));
 
     // Seller + invoice detail rows
     pageWidgets.add(pw.Container(
@@ -252,18 +252,18 @@ class PdfGenerator {
                 pw.TableRow(children: [
                   pw.Container(
                     padding: const pw.EdgeInsets.all(4),
-                    height: 80,
+                    height: 40,
                     child: pw.Text('Terms of Delivery',
                         style: const pw.TextStyle(fontSize: 8)),
                   ),
                   pw.Container(
                     padding: const pw.EdgeInsets.all(4),
-                    height: 80,
+                    height: 40,
                     child: pw.Text(invoice.termsOfDelivery ?? '',
                         style: const pw.TextStyle(fontSize: 8)),
                   ),
-                  pw.Container(height: 80),
-                  pw.Container(height: 80),
+                  pw.Container(height: 40),
+                  pw.Container(height: 40),
                 ]),
               ],
             ),
@@ -368,7 +368,7 @@ class PdfGenerator {
       ),
     ));
 
-    pageWidgets.add(pw.SizedBox(height: 6));
+    pageWidgets.add(pw.SizedBox(height: 2));
 
     // Tax summary table
     pageWidgets.add(taxSummaryTable);
@@ -399,38 +399,35 @@ class PdfGenerator {
       ),
     ));
 
-    pageWidgets.add(pw.SizedBox(height: 6));
+    pageWidgets.add(pw.SizedBox(height: 2));
 
-    // Declaration + bank + signature
-    pageWidgets.add(pw.Container(
-      decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.5)),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Expanded(
-            child: pw.Container(
-              padding: const pw.EdgeInsets.all(6),
-              decoration: pw.BoxDecoration(
-                border: pw.Border(right: pw.BorderSide(width: 0.5)),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text('Declaration',
-                      style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold, fontSize: 9)),
-                  pw.SizedBox(height: 4),
-                  pw.Text(
-                    invoice.declarationText ?? '',
-                    style: const pw.TextStyle(fontSize: 8),
-                    textAlign: pw.TextAlign.justify,
-                  ),
-                ],
-              ),
+    // Declaration + bank + signature (Table ensures equal-height cells & solid borders)
+    pageWidgets.add(pw.Table(
+      border: pw.TableBorder.all(width: 0.5),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(3),
+        1: pw.FixedColumnWidth(170),
+      },
+      children: [
+        pw.TableRow(children: [
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(6),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Declaration',
+                    style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold, fontSize: 9)),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  invoice.declarationText ?? '',
+                  style: const pw.TextStyle(fontSize: 8),
+                  textAlign: pw.TextAlign.justify,
+                ),
+              ],
             ),
           ),
-          pw.Container(
-            width: 170,
+          pw.Padding(
             padding: const pw.EdgeInsets.all(6),
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -444,23 +441,23 @@ class PdfGenerator {
                 _bankRow('Bank Name', invoice.bankName ?? ''),
                 _bankRow('A/C No.', invoice.bankAccountNo ?? ''),
                 _bankRow('Branch & IFS Code', invoice.bankBranchIfsc ?? ''),
-                pw.SizedBox(height: 10),
+                pw.SizedBox(height: 8),
                 pw.Text(
                   'for ${invoice.signatureCompanyName ?? ''}',
                   style: pw.TextStyle(
                       fontWeight: pw.FontWeight.bold, fontSize: 9),
                 ),
-                pw.SizedBox(height: 35),
+                pw.SizedBox(height: 20),
                 pw.Text('Authorised Signatory',
                     style: const pw.TextStyle(fontSize: 8)),
               ],
             ),
           ),
-        ],
-      ),
+        ]),
+      ],
     ));
 
-    pageWidgets.add(pw.SizedBox(height: 6));
+    pageWidgets.add(pw.SizedBox(height: 2));
 
     pageWidgets.add(pw.Center(
       child: pw.Text(
