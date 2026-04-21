@@ -56,7 +56,6 @@ class PdfGenerator {
 
     // Header
     lineItemRows.add(pw.TableRow(children: [
-      _th('Sl\n%'),
       _th('Description of Goods'),
       _th('HSN/SAC'),
       _th('Quantity'),
@@ -68,7 +67,6 @@ class PdfGenerator {
 
     // Item
     lineItemRows.add(pw.TableRow(children: [
-      _tcPad('1'),
       pw.Container(
         padding: const pw.EdgeInsets.fromLTRB(4, 10, 4, 10),
         child: pw.Text(
@@ -87,7 +85,6 @@ class PdfGenerator {
     // Tax row(s)
     if (!inter) {
       lineItemRows.add(pw.TableRow(children: [
-        _tcPad(''),
         pw.Container(
           padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 4),
           child: pw.Text('SGST',
@@ -101,7 +98,6 @@ class PdfGenerator {
         _tcRPad(invoice.sgstAmount ?? ''),
       ]));
       lineItemRows.add(pw.TableRow(children: [
-        _tcPad(''),
         pw.Container(
           padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 4),
           child: pw.Text('CGST',
@@ -116,7 +112,6 @@ class PdfGenerator {
       ]));
     } else {
       lineItemRows.add(pw.TableRow(children: [
-        _tcPad(''),
         pw.Container(
           padding: const pw.EdgeInsets.fromLTRB(4, 4, 4, 20),
           child: pw.Text('IGST',
@@ -133,7 +128,6 @@ class PdfGenerator {
 
     // Total
     lineItemRows.add(pw.TableRow(children: [
-      _tc(''),
       pw.Container(
         padding: const pw.EdgeInsets.all(6),
         child: pw.Text('Total',
@@ -209,62 +203,65 @@ class PdfGenerator {
           ),
           pw.Expanded(
             flex: 6,
-            child: pw.Table(
-              border: pw.TableBorder(
-                top: pw.BorderSide(width: 0.5),
-                bottom: pw.BorderSide(width: 0.5),
-                left: pw.BorderSide(width: 0.5),
-                right: pw.BorderSide(width: 0.5),
-                horizontalInside: pw.BorderSide(width: 0.5),
-                verticalInside: pw.BorderSide(width: 0.5),
-              ),
-              columnWidths: const {
-                0: pw.FlexColumnWidth(2),
-                1: pw.FlexColumnWidth(2),
-                2: pw.FlexColumnWidth(2),
-                3: pw.FlexColumnWidth(2),
-              },
+            child: pw.Column(
               children: [
-                _detailRow('Invoice No.', invoice.invoiceNo ?? '',
-                    'Dated', invoice.invoiceDate ?? '',
-                    boldVal1: true, boldVal2: true),
-                _detailRow('Delivery Note', invoice.deliveryNote ?? '',
-                    'Mode/Terms of Payment', invoice.modeOfPayment ?? ''),
-                _detailRow(
-                    'Reference No. & Date.',
-                    '${invoice.referenceNo ?? ''}  ${invoice.referenceDate ?? ''}'.trim(),
-                    'Other References',
-                    invoice.otherReferences ?? ''),
-                _detailRow("Buyer's Order No.", invoice.buyerOrderNo ?? '',
-                    'Dated', invoice.buyerOrderDate ?? ''),
-                _detailRow('Dispatch Doc No.', invoice.dispatchDocNo ?? '',
-                    'Delivery Note Date', invoice.deliveryNoteDate ?? ''),
-                _detailRow('Dispatched through',
-                    invoice.dispatchedThrough ?? '',
-                    'Destination', invoice.destination ?? ''),
-                _detailRow('Vessel/Flight No.', invoice.vesselFlightNo ?? '',
-                    'Place of receipt by shipper:',
-                    invoice.placeOfReceiptByShipper ?? ''),
-                _detailRow('City/Port of Loading',
-                    invoice.cityPortOfLoading ?? '',
-                    'City/Port of Discharge',
-                    invoice.cityPortOfDischarge ?? ''),
-                pw.TableRow(children: [
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(4),
-                    height: 40,
-                    child: pw.Text('Terms of Delivery',
-                        style: const pw.TextStyle(fontSize: 8)),
+                pw.Table(
+                  border: pw.TableBorder(
+                    top: pw.BorderSide(width: 0.5),
+                    bottom: pw.BorderSide(width: 0.5),
+                    left: pw.BorderSide(width: 0.5),
+                    right: pw.BorderSide(width: 0.5),
+                    horizontalInside: pw.BorderSide(width: 0.5),
+                    verticalInside: pw.BorderSide(width: 0.5),
                   ),
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(4),
-                    height: 40,
-                    child: pw.Text(invoice.termsOfDelivery ?? '',
-                        style: const pw.TextStyle(fontSize: 8)),
+                  columnWidths: const {
+                    0: pw.FlexColumnWidth(2),
+                    1: pw.FlexColumnWidth(2),
+                    2: pw.FlexColumnWidth(2),
+                    3: pw.FlexColumnWidth(2),
+                  },
+                  children: [
+                    _detailRow('Invoice No.', invoice.invoiceNo ?? '',
+                        'Dated', invoice.invoiceDate ?? '',
+                        boldVal1: true, boldVal2: true),
+                    _detailRow('Delivery Note', invoice.deliveryNote ?? '',
+                        'Mode/Terms of Payment', invoice.modeOfPayment ?? ''),
+                    _detailRow(
+                        'Reference No. & Date.',
+                        '${invoice.referenceNo ?? ''}  ${invoice.referenceDate ?? ''}'.trim(),
+                        'Other References',
+                        invoice.otherReferences ?? ''),
+                    _detailRow("Buyer's Order No.", invoice.buyerOrderNo ?? '',
+                        'Dated', invoice.buyerOrderDate ?? ''),
+                    _detailRow('Dispatch Doc No.', invoice.dispatchDocNo ?? '',
+                        'Delivery Note Date', invoice.deliveryNoteDate ?? ''),
+                    _detailRow('Dispatched through',
+                        invoice.dispatchedThrough ?? '',
+                        'Destination', invoice.destination ?? ''),
+                    _detailRow('Vessel/Flight No.', invoice.vesselFlightNo ?? '',
+                        'Place of receipt by shipper:',
+                        invoice.placeOfReceiptByShipper ?? ''),
+                    _detailRow('City/Port of Loading',
+                        invoice.cityPortOfLoading ?? '',
+                        'City/Port of Discharge',
+                        invoice.cityPortOfDischarge ?? ''),
+                  ],
+                ),
+                // Terms of Delivery – single full-width cell
+                pw.Container(
+                  height: 40,
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.all(4),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border(
+                      left: pw.BorderSide(width: 0.5),
+                      right: pw.BorderSide(width: 0.5),
+                      bottom: pw.BorderSide(width: 0.5),
+                    ),
                   ),
-                  pw.Container(height: 40),
-                  pw.Container(height: 40),
-                ]),
+                  child: pw.Text('Terms of Delivery',
+                      style: const pw.TextStyle(fontSize: 8)),
+                ),
               ],
             ),
           ),
@@ -324,14 +321,13 @@ class PdfGenerator {
           verticalInside: pw.BorderSide(width: 0.5),
         ),
         columnWidths: const {
-          0: pw.FixedColumnWidth(20),
-          1: pw.FlexColumnWidth(4),
-          2: pw.FixedColumnWidth(40),
-          3: pw.FixedColumnWidth(48),
-          4: pw.FixedColumnWidth(44),
-          5: pw.FixedColumnWidth(36),
-          6: pw.FixedColumnWidth(24),
-          7: pw.FixedColumnWidth(52),
+          0: pw.FlexColumnWidth(4),
+          1: pw.FixedColumnWidth(40),
+          2: pw.FixedColumnWidth(48),
+          3: pw.FixedColumnWidth(44),
+          4: pw.FixedColumnWidth(36),
+          5: pw.FixedColumnWidth(24),
+          6: pw.FixedColumnWidth(52),
         },
         children: lineItemRows,
       ),
