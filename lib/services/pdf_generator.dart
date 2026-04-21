@@ -36,9 +36,7 @@ class PdfGenerator {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(20),
         theme: theme,
-        build: (context) => [
-          _buildInvoiceContent(computed),
-        ],
+        build: (context) => _buildInvoiceContent(computed),
       ),
     );
 
@@ -58,7 +56,7 @@ class PdfGenerator {
     await OpenFilex.open(filePath);
   }
 
-  static pw.Widget _buildInvoiceContent(InvoiceModel invoice) {
+  static List<pw.Widget> _buildInvoiceContent(InvoiceModel invoice) {
     const rupee = '\u20B9';
     final bool inter = invoice.isInterState;
     // FIX: guard gstRate with null-safe parse before using
@@ -460,10 +458,7 @@ class PdfGenerator {
       ),
     ));
 
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: pageWidgets,
-    );
+    return pageWidgets;
   }
 
   // ── Tax summary table builders ─────────────────────────────────────────────

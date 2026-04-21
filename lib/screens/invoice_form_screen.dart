@@ -82,6 +82,11 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   late TextEditingController signatureCompanyNameController;
   late TextEditingController declarationTextController;
 
+  // ── Tax Amounts (manually entered by user) ─────────────────────────────────
+  late TextEditingController cgstAmountController;
+  late TextEditingController sgstAmountController;
+  late TextEditingController igstAmountController;
+
   @override
   void initState() {
     super.initState();
@@ -92,63 +97,88 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   }
 
   void _initControllers() {
-    companyNameController = TextEditingController(text: invoice.companyName ?? '');
-    proprietorNameController = TextEditingController(text: invoice.proprietorName ?? '');
-    addressLine1Controller = TextEditingController(text: invoice.addressLine1 ?? '');
-    gstinController = TextEditingController(text: invoice.gstin ?? '');
-    sellerStateNameController = TextEditingController(text: invoice.sellerStateName ?? '');
-    sellerStateCodeController = TextEditingController(text: invoice.sellerStateCode ?? '');
-    emailController = TextEditingController(text: invoice.email ?? '');
+    // ── Seller (dummy data from sample invoice) ───────────────────────────────
+    companyNameController = TextEditingController(text: 'PMR TRADING');
+    proprietorNameController =
+        TextEditingController(text: 'Prop-Maheswara Palle Reddy');
+    addressLine1Controller = TextEditingController(
+        text: 'PLOTNO-22,OPP IOC PETROL BUNK, PANDIPADU ROAD,Kallur KURNOOL');
+    gstinController = TextEditingController(text: '37AHOPR5679M1Z5');
+    sellerStateNameController =
+        TextEditingController(text: 'Andhra Pradesh');
+    sellerStateCodeController = TextEditingController(text: '37');
+    emailController = TextEditingController(text: 'pmrtrading4@gmail.com');
 
-    invoiceNoController = TextEditingController(text: invoice.invoiceNo ?? '');
-    invoiceDateController = TextEditingController(text: invoice.invoiceDate ?? '');
-    deliveryNoteController = TextEditingController(text: invoice.deliveryNote ?? '');
-    modeOfPaymentController = TextEditingController(text: invoice.modeOfPayment ?? '');
-    referenceNoController = TextEditingController(text: invoice.referenceNo ?? '');
-    referenceDateController = TextEditingController(text: invoice.referenceDate ?? '');
-    otherReferencesController = TextEditingController(text: invoice.otherReferences ?? '');
-    buyerOrderNoController = TextEditingController(text: invoice.buyerOrderNo ?? '');
-    buyerOrderDateController = TextEditingController(text: invoice.buyerOrderDate ?? '');
-    dispatchDocNoController = TextEditingController(text: invoice.dispatchDocNo ?? '');
-    deliveryNoteDateController = TextEditingController(text: invoice.deliveryNoteDate ?? '');
-    dispatchedThroughController = TextEditingController(text: invoice.dispatchedThrough ?? '');
-    destinationController = TextEditingController(text: invoice.destination ?? '');
-    vesselFlightNoController = TextEditingController(text: invoice.vesselFlightNo ?? '');
-    placeOfReceiptByShipperController = TextEditingController(text: invoice.placeOfReceiptByShipper ?? '');
-    cityPortOfLoadingController = TextEditingController(text: invoice.cityPortOfLoading ?? '');
-    cityPortOfDischargeController = TextEditingController(text: invoice.cityPortOfDischarge ?? '');
-    billOfLadingController = TextEditingController(text: invoice.billOfLading ?? '');
-    motorVehicleNoController = TextEditingController(text: invoice.motorVehicleNo ?? '');
-    termsOfDeliveryController = TextEditingController(text: invoice.termsOfDelivery ?? '');
+    // ── Invoice Meta ──────────────────────────────────────────────────────────
+    invoiceNoController = TextEditingController(text: 'PMR/2026-27/03');
+    invoiceDateController = TextEditingController(text: '13-Apr-26');
+    deliveryNoteController = TextEditingController(text: '');
+    modeOfPaymentController = TextEditingController(text: '');
+    referenceNoController = TextEditingController(text: '');
+    referenceDateController = TextEditingController(text: '');
+    otherReferencesController = TextEditingController(text: '');
+    buyerOrderNoController = TextEditingController(text: '');
+    buyerOrderDateController = TextEditingController(text: '');
+    dispatchDocNoController = TextEditingController(text: '');
+    deliveryNoteDateController = TextEditingController(text: '');
+    dispatchedThroughController = TextEditingController(text: '');
+    destinationController = TextEditingController(text: '');
+    vesselFlightNoController = TextEditingController(text: '');
+    placeOfReceiptByShipperController = TextEditingController(text: '');
+    cityPortOfLoadingController = TextEditingController(text: '');
+    cityPortOfDischargeController = TextEditingController(text: '');
+    billOfLadingController = TextEditingController(text: '');
+    motorVehicleNoController = TextEditingController(text: 'TG33T0639');
+    termsOfDeliveryController = TextEditingController(text: '');
 
-    consigneeNameController = TextEditingController(text: invoice.consigneeName ?? '');
-    consigneeAddressController = TextEditingController(text: invoice.consigneeAddress ?? '');
-    consigneeStateController = TextEditingController(text: invoice.consigneeState ?? '');
-    consigneeStateCodeController = TextEditingController(text: invoice.consigneeStateCode ?? '');
+    // ── Consignee ─────────────────────────────────────────────────────────────
+    consigneeNameController = TextEditingController(text: 'Bheemesh');
+    consigneeAddressController =
+        TextEditingController(text: 'Pedda Anadalapadu, Gadwal');
+    consigneeStateController = TextEditingController(text: 'Telangana');
+    consigneeStateCodeController = TextEditingController(text: '36');
 
-    buyerNameController = TextEditingController(text: invoice.buyerName ?? '');
-    buyerAddressController = TextEditingController(text: invoice.buyerAddress ?? '');
-    buyerStateController = TextEditingController(text: invoice.buyerState ?? '');
-    buyerStateCodeController = TextEditingController(text: invoice.buyerStateCode ?? '');
+    // ── Buyer ─────────────────────────────────────────────────────────────────
+    buyerNameController = TextEditingController(text: 'Bheemesh');
+    buyerAddressController =
+        TextEditingController(text: 'Pedda Anadalapadu, Gadwal');
+    buyerStateController = TextEditingController(text: 'Telangana');
+    buyerStateCodeController = TextEditingController(text: '36');
 
-    itemDescriptionController = TextEditingController(text: invoice.itemDescription ?? '');
-    hsnSacController = TextEditingController(text: invoice.hsnSac ?? '');
-    quantityController = TextEditingController(text: invoice.quantity ?? '');
-    quantityUnitController = TextEditingController(text: invoice.quantityUnit ?? '');
-    rateInclTaxController = TextEditingController(text: invoice.rateInclTax ?? '');
-    rateController = TextEditingController(text: invoice.rate ?? '');
-    perController = TextEditingController(text: invoice.per ?? '');
+    // ── Line Item ─────────────────────────────────────────────────────────────
+    itemDescriptionController =
+        TextEditingController(text: 'Granites Slabs');
+    hsnSacController = TextEditingController(text: '6802');
+    quantityController = TextEditingController(text: '400');
+    quantityUnitController = TextEditingController(text: 'sqf');
+    rateInclTaxController = TextEditingController(text: '70.80');
+    rateController = TextEditingController(text: '60.00');
+    perController = TextEditingController(text: 'sqf');
 
-    gstHsnSacController = TextEditingController(text: invoice.gstHsnSac ?? '');
-    gstRateController = TextEditingController(text: invoice.gstRate ?? '');
+    // ── GST ───────────────────────────────────────────────────────────────────
+    gstHsnSacController = TextEditingController(text: '6802');
+    gstRateController = TextEditingController(text: '18');
+    // Dummy tax amounts: 18% of 24,000 = 4,320 (IGST) or 2,160+2,160 (CGST+SGST)
+    cgstAmountController = TextEditingController(text: '2160.00');
+    sgstAmountController = TextEditingController(text: '2160.00');
+    igstAmountController = TextEditingController(text: '4320.00');
 
-    bankAccountHolderNameController = TextEditingController(text: invoice.bankAccountHolderName ?? '');
-    bankNameController = TextEditingController(text: invoice.bankName ?? '');
-    bankAccountNoController = TextEditingController(text: invoice.bankAccountNo ?? '');
-    bankBranchIfscController = TextEditingController(text: invoice.bankBranchIfsc ?? '');
+    // ── Bank Details ──────────────────────────────────────────────────────────
+    bankAccountHolderNameController =
+        TextEditingController(text: 'PMR TRADING');
+    bankNameController =
+        TextEditingController(text: 'State Bank of India');
+    bankAccountNoController = TextEditingController(text: '123456789012');
+    bankBranchIfscController =
+        TextEditingController(text: 'Kurnool / SBIN0012345');
 
-    signatureCompanyNameController = TextEditingController(text: invoice.signatureCompanyName ?? '');
-    declarationTextController = TextEditingController(text: invoice.declarationText ?? '');
+    // ── Footer ────────────────────────────────────────────────────────────────
+    signatureCompanyNameController =
+        TextEditingController(text: 'PMR TRADING');
+    declarationTextController = TextEditingController(
+        text: 'We declare that this invoice shows the actual price of '
+            'the goods described and that all particulars are true '
+            'and correct.');
   }
 
   @override
@@ -203,6 +233,9 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     bankBranchIfscController.dispose();
     signatureCompanyNameController.dispose();
     declarationTextController.dispose();
+    cgstAmountController.dispose();
+    sgstAmountController.dispose();
+    igstAmountController.dispose();
     super.dispose();
   }
 
@@ -303,10 +336,13 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       rateInclTax: rateInclTaxController.text,
       rate: rateController.text,
       per: perController.text,
-      // FIX: use == true instead of ?? false to safely unwrap nullable bool
       isInterState: isInterState == true,
       gstHsnSac: gstHsnSacController.text,
       gstRate: gstRateController.text,
+      // Tax amounts are passed from user input — NOT auto-calculated
+      cgstAmount: cgstAmountController.text,
+      sgstAmount: sgstAmountController.text,
+      igstAmount: igstAmountController.text,
       bankAccountHolderName: bankAccountHolderNameController.text,
       bankName: bankNameController.text,
       bankAccountNo: bankAccountNoController.text,
@@ -497,6 +533,16 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                       : 'Total GST Rate % (e.g. 18 → 9% CGST + 9% SGST)',
                   keyboardType: TextInputType.number,
                 ),
+                // Tax amount fields — manually entered by user
+                if (isInterState == true) ...[                  
+                  _field(igstAmountController, 'IGST Amount (₹)',
+                      keyboardType: TextInputType.number),
+                ] else if (isInterState == false) ...[                  
+                  _field(cgstAmountController, 'CGST Amount (₹)',
+                      keyboardType: TextInputType.number),
+                  _field(sgstAmountController, 'SGST Amount (₹)',
+                      keyboardType: TextInputType.number),
+                ],
 
                 // ── BANK DETAILS ──────────────────────────────────────────
                 _sectionHeader("Company's Bank Details"),
