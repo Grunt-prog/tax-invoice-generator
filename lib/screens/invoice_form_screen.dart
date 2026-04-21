@@ -303,7 +303,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       rateInclTax: rateInclTaxController.text,
       rate: rateController.text,
       per: perController.text,
-      isInterState: isInterState ?? false,
+      // FIX: use == true instead of ?? false to safely unwrap nullable bool
+      isInterState: isInterState == true,
       gstHsnSac: gstHsnSacController.text,
       gstRate: gstRateController.text,
       bankAccountHolderName: bankAccountHolderNameController.text,
@@ -329,7 +330,9 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
+      // FIX: capture StackTrace for easier debugging
+      debugPrint('PDF generation error: $e\nStack: $st');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -356,7 +359,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       );
 
   Widget _field(TextEditingController ctrl, String label,
-      {TextInputType keyboardType = TextInputType.text}) =>
+          {TextInputType keyboardType = TextInputType.text}) =>
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: TextFormField(
@@ -371,10 +374,10 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
         ),
       );
 
-  /// Tax-type badge shown in the app bar subtitle
+  // FIX: use == true instead of ! to avoid null dereference
   Widget _taxBadge() {
     if (isInterState == null) return const SizedBox.shrink();
-    final bool isInter = isInterState!;
+    final bool isInter = isInterState == true;
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

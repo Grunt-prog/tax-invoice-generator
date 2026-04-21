@@ -61,10 +61,11 @@ class PdfGenerator {
   static pw.Widget _buildInvoiceContent(InvoiceModel invoice) {
     const rupee = '\u20B9';
     final bool inter = invoice.isInterState;
+    // FIX: guard gstRate with null-safe parse before using
     final double gstPct = double.tryParse(invoice.gstRate ?? '0') ?? 0;
     final String halfRate = (gstPct / 2).toStringAsFixed(0);
 
-    // ── Build line-item table rows ahead of time (no spreads inside pw.Table) ──
+    // ── Build line-item table rows ──────────────────────────────────────────
     final List<pw.TableRow> lineItemRows = [];
 
     // Header
@@ -174,12 +175,12 @@ class PdfGenerator {
       ),
     ]));
 
-    // ── Tax summary table chosen ahead of time ──────────────────────────────
+    // ── Tax summary table ───────────────────────────────────────────────────
     final pw.Widget taxSummaryTable = inter
         ? _buildIgstTable(invoice)
         : _buildCgstSgstTable(invoice, halfRate);
 
-    // ── All top-level column children built as a plain list ─────────────────
+    // ── Page content ────────────────────────────────────────────────────────
     final List<pw.Widget> pageWidgets = [];
 
     pageWidgets.add(pw.Center(

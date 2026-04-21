@@ -158,8 +158,6 @@ class InvoiceModel {
     final double gstPct = double.tryParse(gstRate ?? '') ?? 0;
 
     final double calcAmount = qty * rt;
-    // For CGST+SGST: gstRate is total (e.g. 18%), split equally
-    // For IGST: full gstRate applied as IGST
     final double halfGstPct = gstPct / 2;
     final double calcCgst = isInterState ? 0 : (calcAmount * halfGstPct) / 100;
     final double calcSgst = isInterState ? 0 : (calcAmount * halfGstPct) / 100;
@@ -252,12 +250,13 @@ class InvoiceModel {
     return '$intPart.${parts[1]}';
   }
 
+  // FIX: use a local variable `s` instead of reassigning the parameter `n`
   static String _indianFormat(String n) {
     final bool neg = n.startsWith('-');
-    if (neg) n = n.substring(1);
-    if (n.length <= 3) return neg ? '-$n' : n;
-    final String last3 = n.substring(n.length - 3);
-    final String rest = n.substring(0, n.length - 3);
+    String s = neg ? n.substring(1) : n;
+    if (s.length <= 3) return neg ? '-$s' : s;
+    final String last3 = s.substring(s.length - 3);
+    final String rest = s.substring(0, s.length - 3);
     final buf = StringBuffer();
     for (int i = 0; i < rest.length; i++) {
       if (i > 0 && (rest.length - i) % 2 == 0) buf.write(',');
@@ -267,8 +266,9 @@ class InvoiceModel {
     return neg ? '-$result' : result;
   }
 
+  // FIX: use truncateToDouble() and toInt() instead of truncate()
   static String _fmtQty(double v) {
-    if (v == v.truncate()) return v.truncate().toString();
+    if (v == v.truncateToDouble()) return v.toInt().toString();
     return v.toString();
   }
 
