@@ -9,25 +9,41 @@ import '../models/invoice_model.dart';
 
 /// Service to generate tax invoice PDFs
 class PdfGenerator {
-  /// Load fonts that support the ₹ (Rupee) symbol
+  /// Load fonts that support the ₹ (Rupee) symbol.
+  /// Falls back to default pdf theme if font assets are not available.
   static Future<pw.ThemeData> _buildTheme() async {
-    final regularData =
-        await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
-    final boldData =
-        await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
-    final italicData =
-        await rootBundle.load('assets/fonts/NotoSans-Italic.ttf');
+    try {
+      final regularData =
+          await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
+      final boldData =
+          await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
+      final italicData =
+          await rootBundle.load('assets/fonts/NotoSans-Italic.ttf');
 
-    return pw.ThemeData.withFont(
-      base: pw.Font.ttf(regularData),
-      bold: pw.Font.ttf(boldData),
-      italic: pw.Font.ttf(italicData),
-    );
+      return pw.ThemeData.withFont(
+        base: pw.Font.ttf(regularData),
+        bold: pw.Font.ttf(boldData),
+        italic: pw.Font.ttf(italicData),
+      );
+    } catch (_) {
+      // Font files not found — use built-in default theme.
+      // Note: ₹ symbol may not render without NotoSans.
+      // Fix: add NotoSans .ttf files under assets/fonts/ and
+      // declare them in pubspec.yaml.
+      return pw.ThemeData.base();
+    }
   }
 
-  /// Generate and save a tax invoice PDF
+  /// Generate and save a tax invoice PDF.
+  ///
+  /// Pass the raw [InvoiceModel] from your form — this method calls
+  /// [InvoiceModel.withCalculations()] internally so amount, GST total,
+  /// and amount-in-words are always computed fresh from rate × quantity.
   static Future<void> generateInvoice(InvoiceModel invoice) async {
     try {
+      // Auto-calculate amount, totals and words before building the PDF
+      final InvoiceModel computed = invoice.withCalculations();
+
       final pdf = pw.Document();
       final theme = await _buildTheme();
 
@@ -37,13 +53,13 @@ class PdfGenerator {
           margin: const pw.EdgeInsets.all(20),
           theme: theme,
           build: (context) => [
-            _buildInvoiceContent(invoice),
+            _buildInvoiceContent(computed),
           ],
         ),
       );
 
       // Sanitize invoice number — slashes break the file path
-      final sanitizedInvoiceNo = (invoice.invoiceNo ?? '')
+      final sanitizedInvoiceNo = (computed.invoiceNo ?? '')
           .replaceAll('/', '_')
           .replaceAll('\\', '_')
           .replaceAll(' ', '_');
@@ -162,56 +178,56 @@ class PdfGenerator {
           ),
         ),
 
-        // ── Row 2: Consignee (Ship to) — full width ─────────────────────────
-        pw.Container(
-          decoration: pw.BoxDecoration(
-            border: pw.Border(
-              left: pw.BorderSide(width: 0.5),
-              right: pw.BorderSide(width: 0.5),
-              bottom: pw.BorderSide(width: 0.5),
+        // ── Row 2: Consignee (Ship to) | Buyer (Bill to) side by side ──────
+        // Using pw.Table so all borders render correctly
+        pw.Table(
+          border: pw.TableBorder.all(width: 0.5),
+          columnWidths: const {
+            0: pw.FlexColumnWidth(1),
+            1: pw.FlexColumnWidth(1),
+          },
+          children: [
+            pw.TableRow(
+              children: [
+                // Left: Consignee
+                pw.Padding(
+                  padding: const pw.EdgeInsets.all(6),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _txt('Consignee (Ship to)'),
+                      pw.Text(
+                        invoice.consigneeName ?? '',
+                        style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold, fontSize: 10),
+                      ),
+                      _txt(invoice.consigneeAddress ?? ''),
+                      _txt(
+                          'State Name    : ${invoice.consigneeState ?? ''}, Code : ${invoice.consigneeStateCode ?? ''}'),
+                    ],
+                  ),
+                ),
+                // Right: Buyer
+                pw.Padding(
+                  padding: const pw.EdgeInsets.all(6),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _txt('Buyer (Bill to)'),
+                      pw.Text(
+                        invoice.buyerName ?? '',
+                        style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold, fontSize: 10),
+                      ),
+                      _txt(invoice.buyerAddress ?? ''),
+                      _txt(
+                          'State Name    : ${invoice.buyerState ?? ''}, Code : ${invoice.buyerStateCode ?? ''}'),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          padding: const pw.EdgeInsets.all(6),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              _txt('Consignee (Ship to)'),
-              pw.Text(
-                invoice.consigneeName ?? '',
-                style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold, fontSize: 10),
-              ),
-              _txt(invoice.consigneeAddress ?? ''),
-              _txt(
-                  'State Name    : ${invoice.consigneeState ?? ''}, Code : ${invoice.consigneeStateCode ?? ''}'),
-            ],
-          ),
-        ),
-
-        // ── Row 3: Buyer (Bill to) — full width ────────────────────────────
-        pw.Container(
-          decoration: pw.BoxDecoration(
-            border: pw.Border(
-              left: pw.BorderSide(width: 0.5),
-              right: pw.BorderSide(width: 0.5),
-              bottom: pw.BorderSide(width: 0.5),
-            ),
-          ),
-          padding: const pw.EdgeInsets.all(6),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              _txt('Buyer (Bill to)'),
-              pw.Text(
-                invoice.buyerName ?? '',
-                style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold, fontSize: 10),
-              ),
-              _txt(invoice.buyerAddress ?? ''),
-              _txt(
-                  'State Name    : ${invoice.buyerState ?? ''}, Code : ${invoice.buyerStateCode ?? ''}'),
-            ],
-          ),
+          ],
         ),
 
         // ── Line Items Table ────────────────────────────────────────────────
@@ -239,7 +255,7 @@ class PdfGenerator {
               _th('per'),
               _th('Amount'),
             ]),
-            // Item row
+            // Item row — amount2 is auto-calculated (rate × quantity)
             pw.TableRow(children: [
               _tcPad('1'),
               pw.Container(
@@ -256,9 +272,9 @@ class PdfGenerator {
               _tcPad(invoice.rateInclTax ?? ''),
               _tcPad(invoice.rate ?? ''),
               _tcPad(invoice.per ?? ''),
-              _tcRPad(invoice.amount2 ?? ''),
+              _tcRPad(invoice.amount2 ?? ''),          // ← auto-calculated
             ]),
-            // IGST row — extra bottom padding for spacing
+            // IGST row — gstAmount is auto-calculated (amount2 × gstRate%)
             pw.TableRow(children: [
               _tcPad(''),
               pw.Container(
@@ -274,9 +290,9 @@ class PdfGenerator {
               _tcPad(''),
               _tcPad(''),
               _tcPad(''),
-              _tcRPad(invoice.gstAmount ?? ''),
+              _tcRPad(invoice.gstAmount ?? ''),        // ← auto-calculated
             ]),
-            // Total row
+            // Total row — totalAmount = amount2 + gstAmount (auto-calculated)
             pw.TableRow(children: [
               pw.Container(
                 padding: const pw.EdgeInsets.all(6),
@@ -289,7 +305,7 @@ class PdfGenerator {
               pw.Container(
                 padding: const pw.EdgeInsets.all(6),
                 child: pw.Text(
-                  invoice.totalQuantity ?? '',
+                  invoice.totalQuantity ?? '',         // ← auto-calculated
                   style: pw.TextStyle(
                       fontWeight: pw.FontWeight.bold, fontSize: 9),
                   textAlign: pw.TextAlign.center,
@@ -301,9 +317,7 @@ class PdfGenerator {
               pw.Container(
                 padding: const pw.EdgeInsets.all(6),
                 child: pw.Text(
-                  // Use \u20B9 (explicit Unicode) instead of literal ₹
-                  // to avoid font-encoding issues in some PDF renderers
-                  '$rupee ${invoice.totalAmount ?? ''}',
+                  '$rupee ${invoice.totalAmount ?? ''}', // ← auto-calculated
                   style: pw.TextStyle(
                       fontWeight: pw.FontWeight.bold, fontSize: 9),
                   textAlign: pw.TextAlign.right,
@@ -313,7 +327,7 @@ class PdfGenerator {
           ],
         ),
 
-        // ── Amount in Words ─────────────────────────────────────────────────
+        // ── Amount in Words (auto-calculated) ──────────────────────────────
         pw.Container(
           decoration: pw.BoxDecoration(
             border: pw.Border(
@@ -332,7 +346,7 @@ class PdfGenerator {
                   children: [
                     _txt('Amount Chargeable (in words)'),
                     pw.Text(
-                      invoice.amountInWords ?? '',
+                      invoice.amountInWords ?? '', // ← auto-calculated
                       style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold, fontSize: 9),
                     ),
@@ -366,10 +380,10 @@ class PdfGenerator {
             ]),
             pw.TableRow(children: [
               _tc(invoice.gstHsnSac ?? ''),
-              _tcR(invoice.taxableValue ?? ''),
-              _tc(invoice.gstRate ?? ''),
-              _tcR(invoice.gstAmount ?? ''),
-              _tcR(invoice.totalTaxAmount ?? ''),
+              _tcR(invoice.taxableValue ?? ''),        // ← auto-calculated
+              _tc('${invoice.gstRate ?? ''}%'),
+              _tcR(invoice.gstAmount ?? ''),           // ← auto-calculated
+              _tcR(invoice.totalTaxAmount ?? ''),      // ← auto-calculated
             ]),
             // Total row
             pw.TableRow(children: [
@@ -381,31 +395,37 @@ class PdfGenerator {
               ),
               pw.Container(
                 padding: const pw.EdgeInsets.all(5),
-                child: pw.Text(invoice.gstTotalTaxableValue ?? '',
-                    style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold, fontSize: 9),
-                    textAlign: pw.TextAlign.right),
+                child: pw.Text(
+                  invoice.gstTotalTaxableValue ?? '', // ← auto-calculated
+                  style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold, fontSize: 9),
+                  textAlign: pw.TextAlign.right,
+                ),
               ),
               _tc(''),
               pw.Container(
                 padding: const pw.EdgeInsets.all(5),
-                child: pw.Text(invoice.totalTaxAmount ?? '',
-                    style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold, fontSize: 9),
-                    textAlign: pw.TextAlign.right),
+                child: pw.Text(
+                  invoice.totalTaxAmount ?? '',        // ← auto-calculated
+                  style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold, fontSize: 9),
+                  textAlign: pw.TextAlign.right,
+                ),
               ),
               pw.Container(
                 padding: const pw.EdgeInsets.all(5),
-                child: pw.Text(invoice.totalTaxAmount ?? '',
-                    style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold, fontSize: 9),
-                    textAlign: pw.TextAlign.right),
+                child: pw.Text(
+                  invoice.totalTaxAmount ?? '',        // ← auto-calculated
+                  style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold, fontSize: 9),
+                  textAlign: pw.TextAlign.right,
+                ),
               ),
             ]),
           ],
         ),
 
-        // ── Tax Amount in Words ─────────────────────────────────────────────
+        // ── Tax Amount in Words (auto-calculated) ───────────────────────────
         pw.Container(
           decoration: pw.BoxDecoration(
             border: pw.Border(
@@ -421,7 +441,7 @@ class PdfGenerator {
                   text: 'Tax Amount (in words) :  ',
                   style: const pw.TextStyle(fontSize: 8)),
               pw.TextSpan(
-                  text: invoice.taxAmountInWords ?? '',
+                  text: invoice.taxAmountInWords ?? '', // ← auto-calculated
                   style: pw.TextStyle(
                       fontWeight: pw.FontWeight.bold, fontSize: 9)),
             ]),
@@ -521,12 +541,10 @@ class PdfGenerator {
   static pw.Widget _th(String text) => pw.Container(
         padding: const pw.EdgeInsets.all(5),
         child: pw.Text(text,
-            style:
-                pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
             textAlign: pw.TextAlign.center),
       );
 
-  // Normal centered cell
   static pw.Widget _tc(String text) => pw.Container(
         padding: const pw.EdgeInsets.all(4),
         child: pw.Text(text,
@@ -534,7 +552,6 @@ class PdfGenerator {
             textAlign: pw.TextAlign.center),
       );
 
-  // Right-aligned cell
   static pw.Widget _tcR(String text) => pw.Container(
         padding: const pw.EdgeInsets.all(4),
         child: pw.Text(text,
@@ -542,7 +559,6 @@ class PdfGenerator {
             textAlign: pw.TextAlign.right),
       );
 
-  // Tall padded centered cell (for item rows spacing)
   static pw.Widget _tcPad(String text) => pw.Container(
         padding: const pw.EdgeInsets.fromLTRB(4, 10, 4, 10),
         child: pw.Text(text,
@@ -550,7 +566,6 @@ class PdfGenerator {
             textAlign: pw.TextAlign.center),
       );
 
-  // Tall padded right-aligned cell
   static pw.Widget _tcRPad(String text) => pw.Container(
         padding: const pw.EdgeInsets.fromLTRB(4, 10, 4, 10),
         child: pw.Text(text,
@@ -558,7 +573,6 @@ class PdfGenerator {
             textAlign: pw.TextAlign.right),
       );
 
-  /// Get save directory — app-specific, no runtime permissions needed
   static Future<Directory> _getSaveDirectory() async {
     if (Platform.isAndroid) {
       final directory = await getExternalStorageDirectory();
