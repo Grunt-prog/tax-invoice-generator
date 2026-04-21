@@ -181,7 +181,7 @@ class PdfGenerator {
     pageWidgets.add(pw.Container(
       decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.5)),
       child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Expanded(
             flex: 4,
