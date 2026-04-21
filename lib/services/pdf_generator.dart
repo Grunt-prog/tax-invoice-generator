@@ -245,6 +245,10 @@ class PdfGenerator {
                         invoice.cityPortOfLoading ?? '',
                         'City/Port of Discharge',
                         invoice.cityPortOfDischarge ?? ''),
+                    _detailRow('Bill of Lading/LR-RR No.',
+                        invoice.billOfLading ?? '',
+                        'Motor Vehicle No.',
+                        invoice.motorVehicleNo ?? ''),
                   ],
                 ),
                 // Terms of Delivery – single full-width cell
