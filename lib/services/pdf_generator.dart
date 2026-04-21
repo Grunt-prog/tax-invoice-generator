@@ -103,8 +103,6 @@ class PdfGenerator {
                       ),
                       _txt(invoice.proprietorName ?? ''),
                       _txt(invoice.addressLine1 ?? ''),
-                      _txt(invoice.addressLine2 ?? ''),
-                      _txt(invoice.addressLine3 ?? ''),
                       pw.SizedBox(height: 4),
                       _txt('GSTIN/UIN: ${invoice.gstin ?? ''}'),
                       _txt(
