@@ -520,7 +520,8 @@ class PdfGenerator {
           _boldRCell(inv.totalTaxAmount ?? ''),
         ]),
       ],
-    );
+      ),  // Close pw.Table
+    );  // Close pw.Container
   }
 
   static pw.Widget _buildIgstTable(InvoiceModel inv) {
