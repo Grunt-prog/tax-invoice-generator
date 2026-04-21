@@ -26,9 +26,14 @@ class PdfGenerator {
       );
 
       // Generate filename with timestamp
+      // Sanitize invoice number to remove slashes/spaces that would break file paths
+      final sanitizedInvoiceNo = (invoice.invoiceNo ?? '')
+          .replaceAll('/', '_')
+          .replaceAll('\\', '_')
+          .replaceAll(' ', '_');
       final now = DateTime.now();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(now);
-      final filename = 'Invoice_${invoice.invoiceNo}_$timestamp.pdf';
+      final filename = 'Invoice_${sanitizedInvoiceNo}_$timestamp.pdf';
 
       // Get the save directory (no permissions needed for app-specific storage)
       final saveDir = await _getSaveDirectory();
