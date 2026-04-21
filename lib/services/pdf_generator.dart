@@ -133,12 +133,12 @@ class PdfGenerator {
 
     // Total
     lineItemRows.add(pw.TableRow(children: [
+      _tc(''),
       pw.Container(
         padding: const pw.EdgeInsets.all(6),
         child: pw.Text('Total',
             style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)),
       ),
-      _tc(''),
       _tc(''),
       pw.Container(
         padding: const pw.EdgeInsets.all(6),
@@ -181,7 +181,7 @@ class PdfGenerator {
     pageWidgets.add(pw.Container(
       decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.5)),
       child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
           pw.Expanded(
             flex: 4,
@@ -211,6 +211,10 @@ class PdfGenerator {
             flex: 6,
             child: pw.Table(
               border: pw.TableBorder(
+                top: pw.BorderSide(width: 0.5),
+                bottom: pw.BorderSide(width: 0.5),
+                left: pw.BorderSide(width: 0.5),
+                right: pw.BorderSide(width: 0.5),
                 horizontalInside: pw.BorderSide(width: 0.5),
                 verticalInside: pw.BorderSide(width: 0.5),
               ),
@@ -246,10 +250,20 @@ class PdfGenerator {
                     'City/Port of Discharge',
                     invoice.cityPortOfDischarge ?? ''),
                 pw.TableRow(children: [
-                  _detailCell('Terms of Delivery'),
-                  _detailCell(invoice.termsOfDelivery ?? ''),
-                  pw.Container(),
-                  pw.Container(),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(4),
+                    height: 80,
+                    child: pw.Text('Terms of Delivery',
+                        style: const pw.TextStyle(fontSize: 8)),
+                  ),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(4),
+                    height: 80,
+                    child: pw.Text(invoice.termsOfDelivery ?? '',
+                        style: const pw.TextStyle(fontSize: 8)),
+                  ),
+                  pw.Container(height: 80),
+                  pw.Container(height: 80),
                 ]),
               ],
             ),
@@ -302,19 +316,25 @@ class PdfGenerator {
     ));
 
     // Line items table
-    pageWidgets.add(pw.Table(
-      border: pw.TableBorder.all(width: 0.5),
-      columnWidths: const {
-        0: pw.FixedColumnWidth(20),
-        1: pw.FlexColumnWidth(4),
-        2: pw.FixedColumnWidth(40),
-        3: pw.FixedColumnWidth(48),
-        4: pw.FixedColumnWidth(44),
-        5: pw.FixedColumnWidth(36),
-        6: pw.FixedColumnWidth(24),
-        7: pw.FixedColumnWidth(52),
-      },
-      children: lineItemRows,
+    pageWidgets.add(pw.Container(
+      decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.5)),
+      child: pw.Table(
+        border: pw.TableBorder(
+          horizontalInside: pw.BorderSide(width: 0.5),
+          verticalInside: pw.BorderSide(width: 0.5),
+        ),
+        columnWidths: const {
+          0: pw.FixedColumnWidth(20),
+          1: pw.FlexColumnWidth(4),
+          2: pw.FixedColumnWidth(40),
+          3: pw.FixedColumnWidth(48),
+          4: pw.FixedColumnWidth(44),
+          5: pw.FixedColumnWidth(36),
+          6: pw.FixedColumnWidth(24),
+          7: pw.FixedColumnWidth(52),
+        },
+        children: lineItemRows,
+      ),
     ));
 
     // Amount in words
@@ -455,8 +475,13 @@ class PdfGenerator {
   // ── Tax summary table builders ─────────────────────────────────────────────
 
   static pw.Widget _buildCgstSgstTable(InvoiceModel inv, String halfRate) {
-    return pw.Table(
-      border: pw.TableBorder.all(width: 0.5),
+    return pw.Container(
+      decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.5)),
+      child: pw.Table(
+        border: pw.TableBorder(
+          horizontalInside: pw.BorderSide(width: 0.5),
+          verticalInside: pw.BorderSide(width: 0.5),
+        ),
       columnWidths: const {
         0: pw.FlexColumnWidth(2),
         1: pw.FlexColumnWidth(2),
@@ -499,17 +524,22 @@ class PdfGenerator {
   }
 
   static pw.Widget _buildIgstTable(InvoiceModel inv) {
-    return pw.Table(
-      border: pw.TableBorder.all(width: 0.5),
-      columnWidths: const {
-        0: pw.FlexColumnWidth(2),
-        1: pw.FlexColumnWidth(2),
-        2: pw.FlexColumnWidth(1.5),
-        3: pw.FlexColumnWidth(2),
-        4: pw.FlexColumnWidth(2),
-      },
-      children: [
-        pw.TableRow(children: [
+    return pw.Container(
+      decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.5)),
+      child: pw.Table(
+        border: pw.TableBorder(
+          horizontalInside: pw.BorderSide(width: 0.5),
+          verticalInside: pw.BorderSide(width: 0.5),
+        ),
+        columnWidths: const {
+          0: pw.FlexColumnWidth(2),
+          1: pw.FlexColumnWidth(2),
+          2: pw.FlexColumnWidth(1.5),
+          3: pw.FlexColumnWidth(2),
+          4: pw.FlexColumnWidth(2),
+        },
+        children: [
+          pw.TableRow(children: [
           _th('HSN/SAC'),
           _th('Taxable\nValue'),
           _th('IGST\nRate'),
@@ -531,6 +561,7 @@ class PdfGenerator {
           _boldRCell(inv.totalTaxAmount ?? ''),
         ]),
       ],
+      ),
     );
   }
 
