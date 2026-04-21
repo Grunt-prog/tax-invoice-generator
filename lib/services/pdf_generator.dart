@@ -2,28 +2,16 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 import '../models/invoice_model.dart';
 
 class PdfGenerator {
+  // Uses the pdf package's built-in Helvetica fonts.
+  // Custom TTF files (NotoSans) crash TtfParser._parseCMap in pdf 3.10.x
+  // because NotoSans uses a complex cmap-12 Unicode table not fully supported.
   static Future<pw.ThemeData> _buildTheme() async {
-    try {
-      final regularData =
-          await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
-      final boldData =
-          await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
-      final italicData =
-          await rootBundle.load('assets/fonts/NotoSans-Italic.ttf');
-      return pw.ThemeData.withFont(
-        base: pw.Font.ttf(regularData),
-        bold: pw.Font.ttf(boldData),
-        italic: pw.Font.ttf(italicData),
-      );
-    } catch (_) {
-      return pw.ThemeData.base();
-    }
+    return pw.ThemeData.base();
   }
 
   static Future<void> generateInvoice(InvoiceModel invoice) async {
@@ -57,7 +45,7 @@ class PdfGenerator {
   }
 
   static List<pw.Widget> _buildInvoiceContent(InvoiceModel invoice) {
-    const rupee = '\u20B9';
+    const rupee = 'Rs.';
     final bool inter = invoice.isInterState;
     // FIX: guard gstRate with null-safe parse before using
     final double gstPct = double.tryParse(invoice.gstRate ?? '0') ?? 0;
