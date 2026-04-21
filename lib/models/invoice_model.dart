@@ -1,23 +1,8 @@
 /// Model for a Tax Invoice.
 ///
-/// Fields the USER fills in the form:
-///   - All seller/buyer/consignee info
-///   - invoiceNo, invoiceDate, motorVehicleNo, etc.
-///   - itemDescription, hsnSac, quantity, quantityUnit, rateInclTax, rate, per
-///   - gstRate  (IGST % — e.g. "18")
-///   - gstHsnSac
-///   - declarationText, signatureCompanyName
-///
-/// Fields that are AUTO-CALCULATED (never shown in the form UI):
-///   - amount2          = rate × quantity
-///   - gstAmount        = (amount2 × gstRate) / 100
-///   - totalAmount      = amount2 + gstAmount
-///   - taxableValue     = amount2  (pre-tax value)
-///   - totalTaxAmount   = gstAmount
-///   - gstTotalTaxableValue = taxableValue (summary table total)
-///   - totalQuantity    = quantity + unit (display string)
-///   - amountInWords    = totalAmount in words (INR ... Only)
-///   - taxAmountInWords = gstAmount in words (INR ... Only)
+/// Tax type is controlled by [isInterState]:
+///   false → CGST + SGST (Andhra Pradesh / Telangana)
+///   true  → IGST (other states)
 class InvoiceModel {
   // ── Seller ────────────────────────────────────────────────────────────────
   final String? companyName;
@@ -34,6 +19,7 @@ class InvoiceModel {
   final String? deliveryNote;
   final String? modeOfPayment;
   final String? referenceNo;
+  final String? referenceDate;
   final String? otherReferences;
   final String? buyerOrderNo;
   final String? buyerOrderDate;
@@ -41,6 +27,10 @@ class InvoiceModel {
   final String? deliveryNoteDate;
   final String? dispatchedThrough;
   final String? destination;
+  final String? vesselFlightNo;
+  final String? placeOfReceiptByShipper;
+  final String? cityPortOfLoading;
+  final String? cityPortOfDischarge;
   final String? billOfLading;
   final String? motorVehicleNo;
   final String? termsOfDelivery;
@@ -60,26 +50,36 @@ class InvoiceModel {
   // ── Line Item (user-entered) ───────────────────────────────────────────────
   final String? itemDescription;
   final String? hsnSac;
-  final String? quantity;       // numeric string e.g. "400"
-  final String? quantityUnit;   // e.g. "sqf"
-  final String? rateInclTax;    // display only
-  final String? rate;           // numeric string e.g. "60"
-  final String? per;            // e.g. "sqf"
+  final String? quantity;
+  final String? quantityUnit;
+  final String? rateInclTax;
+  final String? rate;
+  final String? per;
 
-  // ── GST (user-entered) ────────────────────────────────────────────────────
+  // ── Tax config ────────────────────────────────────────────────────────────
+  /// false = CGST+SGST (AP/Telangana), true = IGST (other states)
+  final bool isInterState;
   final String? gstHsnSac;
-  final String? gstRate;        // numeric string e.g. "18"
+  final String? gstRate;
+
+  // ── Bank Details ──────────────────────────────────────────────────────────
+  final String? bankAccountHolderName;
+  final String? bankName;
+  final String? bankAccountNo;
+  final String? bankBranchIfsc;
 
   // ── Auto-calculated (DO NOT show in UI) ───────────────────────────────────
-  final String? amount2;             // rate × quantity
-  final String? gstAmount;           // amount2 × gstRate / 100
-  final String? totalAmount;         // amount2 + gstAmount
-  final String? taxableValue;        // same as amount2
-  final String? totalTaxAmount;      // same as gstAmount
-  final String? gstTotalTaxableValue;// same as taxableValue (summary total row)
-  final String? totalQuantity;       // "400 sqf"
-  final String? amountInWords;       // total in words
-  final String? taxAmountInWords;    // gst in words
+  final String? amount2;
+  final String? cgstAmount;
+  final String? sgstAmount;
+  final String? igstAmount;
+  final String? totalAmount;
+  final String? taxableValue;
+  final String? totalTaxAmount;
+  final String? gstTotalTaxableValue;
+  final String? totalQuantity;
+  final String? amountInWords;
+  final String? taxAmountInWords;
 
   // ── Declaration ───────────────────────────────────────────────────────────
   final String? declarationText;
@@ -98,6 +98,7 @@ class InvoiceModel {
     this.deliveryNote,
     this.modeOfPayment,
     this.referenceNo,
+    this.referenceDate,
     this.otherReferences,
     this.buyerOrderNo,
     this.buyerOrderDate,
@@ -105,6 +106,10 @@ class InvoiceModel {
     this.deliveryNoteDate,
     this.dispatchedThrough,
     this.destination,
+    this.vesselFlightNo,
+    this.placeOfReceiptByShipper,
+    this.cityPortOfLoading,
+    this.cityPortOfDischarge,
     this.billOfLading,
     this.motorVehicleNo,
     this.termsOfDelivery,
@@ -123,11 +128,18 @@ class InvoiceModel {
     this.rateInclTax,
     this.rate,
     this.per,
+    this.isInterState = false,
     this.gstHsnSac,
     this.gstRate,
-    // auto-calculated — normally leave null, call withCalculations()
+    this.bankAccountHolderName,
+    this.bankName,
+    this.bankAccountNo,
+    this.bankBranchIfsc,
+    // auto-calculated
     this.amount2,
-    this.gstAmount,
+    this.cgstAmount,
+    this.sgstAmount,
+    this.igstAmount,
     this.totalAmount,
     this.taxableValue,
     this.totalTaxAmount,
@@ -140,28 +152,30 @@ class InvoiceModel {
   });
 
   /// Returns a new [InvoiceModel] with all calculated fields populated.
-  /// Call this BEFORE passing the model to [PdfGenerator.generateInvoice].
-  ///
-  /// Example:
-  ///   final ready = invoice.withCalculations();
-  ///   await PdfGenerator.generateInvoice(ready);
   InvoiceModel withCalculations() {
-    // Parse user-entered numeric strings safely
     final double qty = double.tryParse(quantity ?? '') ?? 0;
     final double rt = double.tryParse(rate ?? '') ?? 0;
     final double gstPct = double.tryParse(gstRate ?? '') ?? 0;
 
     final double calcAmount = qty * rt;
-    final double calcGst = (calcAmount * gstPct) / 100;
-    final double calcTotal = calcAmount + calcGst;
+    // For CGST+SGST: gstRate is total (e.g. 18%), split equally
+    // For IGST: full gstRate applied as IGST
+    final double halfGstPct = gstPct / 2;
+    final double calcCgst = isInterState ? 0 : (calcAmount * halfGstPct) / 100;
+    final double calcSgst = isInterState ? 0 : (calcAmount * halfGstPct) / 100;
+    final double calcIgst = isInterState ? (calcAmount * gstPct) / 100 : 0;
+    final double calcTotalTax = isInterState ? calcIgst : (calcCgst + calcSgst);
+    final double calcTotal = calcAmount + calcTotalTax;
 
     final String fmtAmount = _fmt(calcAmount);
-    final String fmtGst = _fmt(calcGst);
+    final String fmtCgst = isInterState ? '' : _fmt(calcCgst);
+    final String fmtSgst = isInterState ? '' : _fmt(calcSgst);
+    final String fmtIgst = isInterState ? _fmt(calcIgst) : '';
+    final String fmtTotalTax = _fmt(calcTotalTax);
     final String fmtTotal = _fmt(calcTotal);
     final String fmtQty = '${_fmtQty(qty)} ${quantityUnit ?? ''}'.trim();
 
     return InvoiceModel(
-      // copy all user-entered fields unchanged
       companyName: companyName,
       proprietorName: proprietorName,
       addressLine1: addressLine1,
@@ -174,6 +188,7 @@ class InvoiceModel {
       deliveryNote: deliveryNote,
       modeOfPayment: modeOfPayment,
       referenceNo: referenceNo,
+      referenceDate: referenceDate,
       otherReferences: otherReferences,
       buyerOrderNo: buyerOrderNo,
       buyerOrderDate: buyerOrderDate,
@@ -181,6 +196,10 @@ class InvoiceModel {
       deliveryNoteDate: deliveryNoteDate,
       dispatchedThrough: dispatchedThrough,
       destination: destination,
+      vesselFlightNo: vesselFlightNo,
+      placeOfReceiptByShipper: placeOfReceiptByShipper,
+      cityPortOfLoading: cityPortOfLoading,
+      cityPortOfDischarge: cityPortOfDischarge,
       billOfLading: billOfLading,
       motorVehicleNo: motorVehicleNo,
       termsOfDelivery: termsOfDelivery,
@@ -199,37 +218,40 @@ class InvoiceModel {
       rateInclTax: rateInclTax,
       rate: rate,
       per: per,
+      isInterState: isInterState,
       gstHsnSac: gstHsnSac,
       gstRate: gstRate,
+      bankAccountHolderName: bankAccountHolderName,
+      bankName: bankName,
+      bankAccountNo: bankAccountNo,
+      bankBranchIfsc: bankBranchIfsc,
       declarationText: declarationText,
       signatureCompanyName: signatureCompanyName,
       // ── auto-calculated ──
       amount2: fmtAmount,
-      gstAmount: fmtGst,
+      cgstAmount: fmtCgst,
+      sgstAmount: fmtSgst,
+      igstAmount: fmtIgst,
       totalAmount: fmtTotal,
       taxableValue: fmtAmount,
-      totalTaxAmount: fmtGst,
+      totalTaxAmount: fmtTotalTax,
       gstTotalTaxableValue: fmtAmount,
       totalQuantity: fmtQty,
       amountInWords: _toWords(calcTotal),
-      taxAmountInWords: _toWords(calcGst),
+      taxAmountInWords: _toWords(calcTotalTax),
     );
   }
 
   // ── Formatting helpers ─────────────────────────────────────────────────────
 
-  /// Format a double as Indian-style number with 2 decimal places.
-  /// e.g. 24000.0 → "24,000.00"
   static String _fmt(double v) {
     if (v == 0) return '0.00';
-    // Split integer and decimal parts
     final String raw = v.toStringAsFixed(2);
     final parts = raw.split('.');
     final String intPart = _indianFormat(parts[0]);
     return '$intPart.${parts[1]}';
   }
 
-  /// Format integer part with Indian grouping (last 3 then groups of 2).
   static String _indianFormat(String n) {
     final bool neg = n.startsWith('-');
     if (neg) n = n.substring(1);
@@ -245,13 +267,10 @@ class InvoiceModel {
     return neg ? '-$result' : result;
   }
 
-  /// Format quantity — drop ".0" for whole numbers.
   static String _fmtQty(double v) {
     if (v == v.truncate()) return v.truncate().toString();
     return v.toString();
   }
-
-  // ── Number to words ────────────────────────────────────────────────────────
 
   static const _ones = [
     '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight',
@@ -263,15 +282,11 @@ class InvoiceModel {
     'Sixty', 'Seventy', 'Eighty', 'Ninety'
   ];
 
-  /// Convert a double amount to Indian-style words.
-  /// e.g. 28320.00 → "INR Twenty Eight Thousand Three Hundred Twenty Only"
   static String _toWords(double amount) {
     if (amount == 0) return 'INR Zero Only';
-
     final int paise = (amount * 100).round();
     final int rupees = paise ~/ 100;
     final int paiseRem = paise % 100;
-
     String words = 'INR ${_rupeeWords(rupees)}';
     if (paiseRem > 0) {
       words += ' and ${_twoDigitWords(paiseRem)} Paise';
