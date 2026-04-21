@@ -378,14 +378,14 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isInterState! ? Colors.orange.shade100 : Colors.green.shade100,
+        color: isInterState ? Colors.orange.shade100 : Colors.green.shade100,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        isInterState! ? 'IGST (Other State)' : 'CGST + SGST (AP/Telangana)',
+        isInterState ? 'IGST (Other State)' : 'CGST + SGST (AP/Telangana)',
         style: TextStyle(
           fontSize: 11,
-          color: isInterState! ? Colors.orange.shade800 : Colors.green.shade800,
+          color: isInterState ? Colors.orange.shade800 : Colors.green.shade800,
           fontWeight: FontWeight.w600,
         ),
       ),
