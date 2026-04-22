@@ -2,6 +2,101 @@ import 'package:flutter/material.dart';
 import '../models/invoice_model.dart';
 import '../services/pdf_generator.dart';
 
+// ── Indian GST State Code Lookup ──────────────────────────────────────────────
+// Keys are lowercase for case-insensitive matching.
+const Map<String, String> _kStateGstCodes = {
+  'jammu and kashmir': '01',
+  'jammu & kashmir': '01',
+  'j&k': '01',
+  'himachal pradesh': '02',
+  'hp': '02',
+  'punjab': '03',
+  'chandigarh': '04',
+  'uttarakhand': '05',
+  'uttaranchal': '05',
+  'haryana': '06',
+  'delhi': '07',
+  'new delhi': '07',
+  'rajasthan': '08',
+  'uttar pradesh': '09',
+  'up': '09',
+  'bihar': '10',
+  'sikkim': '11',
+  'arunachal pradesh': '12',
+  'nagaland': '13',
+  'manipur': '14',
+  'mizoram': '15',
+  'tripura': '16',
+  'meghalaya': '17',
+  'assam': '18',
+  'west bengal': '19',
+  'wb': '19',
+  'jharkhand': '20',
+  'odisha': '21',
+  'orissa': '21',
+  'chhattisgarh': '22',
+  'chattisgarh': '22',
+  'madhya pradesh': '23',
+  'mp': '23',
+  'gujarat': '24',
+  'dadra and nagar haveli and daman and diu': '26',
+  'dadra & nagar haveli and daman & diu': '26',
+  'daman and diu': '25',
+  'daman & diu': '25',
+  'maharashtra': '27',
+  'karnataka': '29',
+  'goa': '30',
+  'lakshadweep': '31',
+  'kerala': '32',
+  'tamil nadu': '33',
+  'tamilnadu': '33',
+  'tn': '33',
+  'puducherry': '34',
+  'pondicherry': '34',
+  'andaman and nicobar': '35',
+  'andaman & nicobar': '35',
+  'andaman and nicobar islands': '35',
+  'telangana': '36',
+  'ts': '36',
+  'andhra pradesh': '37',
+  'ap': '37',
+  'ladakh': '38',
+};
+
+/// Returns the 2-digit GST state code for [stateName], or '' if not found.
+String _lookupStateCode(String stateName) =>
+    _kStateGstCodes[stateName.trim().toLowerCase()] ?? '';
+
+/// Returns a suggested state name when [input] is not an exact key.
+/// Tries prefix → substring → collapsed-string matching.
+/// Returns null if nothing plausible is found.
+String? _suggestState(String input) {
+  final q = input.trim().toLowerCase();
+  if (q.isEmpty) return null;
+  // 1. key starts with what the user typed ("andhra" → "andhra pradesh")
+  for (final key in _kStateGstCodes.keys) {
+    if (key.startsWith(q)) return _toTitleCase(key);
+  }
+  // 2. key contains the typed text ("pradesh" → "andhra pradesh")
+  for (final key in _kStateGstCodes.keys) {
+    if (key.contains(q)) return _toTitleCase(key);
+  }
+  // 3. collapsed match — ignores spaces ("andhrapradesh" → "andhra pradesh")
+  final qCollapsed = q.replaceAll(' ', '');
+  for (final key in _kStateGstCodes.keys) {
+    if (key.replaceAll(' ', '').contains(qCollapsed) ||
+        qCollapsed.contains(key.replaceAll(' ', ''))) {
+      return _toTitleCase(key);
+    }
+  }
+  return null;
+}
+
+String _toTitleCase(String s) => s
+    .split(' ')
+    .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+    .join(' ');
+
 class InvoiceFormScreen extends StatefulWidget {
   const InvoiceFormScreen({super.key});
 
@@ -51,7 +146,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   late TextEditingController consigneeNameController;
   late TextEditingController consigneeAddressController;
   late TextEditingController consigneeStateController;
-  late TextEditingController consigneeStateCodeController;
+  late TextEditingController consigneeStateCodeController; // auto-filled, not shown in UI
 
   // ── Buyer ─────────────────────────────────────────────────────────────────
   late TextEditingController buyerNameController;
@@ -82,20 +177,31 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   late TextEditingController signatureCompanyNameController;
   late TextEditingController declarationTextController;
 
-  // ── Tax Amounts (auto-calculated, not shown in UI) ──────────────────────────
-  // These are no longer manually entered — auto-calculated by withCalculations()
-
   @override
   void initState() {
     super.initState();
     invoice = const InvoiceModel();
     _initControllers();
-    // Show state selection dialog on first frame
+    // Auto-populate state codes whenever the state name fields change.
+    consigneeStateController.addListener(_onConsigneeStateChanged);
+    // Show state selection dialog on first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) => _showStateDialog());
   }
 
+  // ── State code auto-fill ──────────────────────────────────────────────────
+
+  void _onConsigneeStateChanged() {
+    final code = _lookupStateCode(consigneeStateController.text);
+    if (code.isNotEmpty && consigneeStateCodeController.text != code) {
+      consigneeStateCodeController.text = code;
+      // buyer state/code mirrors consignee — keep in sync
+      buyerStateController.text = consigneeStateController.text;
+      buyerStateCodeController.text = code;
+    }
+  }
+
   void _initControllers() {
-    // ── Seller (dummy data from sample invoice) ───────────────────────────────
+    // ── Seller ────────────────────────────────────────────────────────────────
     companyNameController = TextEditingController(text: 'PMR TRADING');
     proprietorNameController =
         TextEditingController(text: 'Prop-Maheswara Palle Reddy');
@@ -131,18 +237,22 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
 
     // ── Consignee ─────────────────────────────────────────────────────────────
     consigneeNameController = TextEditingController(text: 'Bheemesh');
-    // Consignee address will be synced with Buyer address
     consigneeAddressController =
         TextEditingController(text: 'Pedda Anadalapadu, Gadwal');
-    consigneeStateController = TextEditingController(text: 'Andhra Pradesh');
-    consigneeStateCodeController = TextEditingController(text: '28');
+    consigneeStateController =
+        TextEditingController(text: 'Andhra Pradesh');
+    // Pre-populate code for the default state value.
+    consigneeStateCodeController = TextEditingController(
+        text: _lookupStateCode('Andhra Pradesh'));
 
-    // ── Buyer ─────────────────────────────────────────────────────────────────
+    // ── Buyer (mirrors consignee state/code; only name is user-entered) ───────
     buyerNameController = TextEditingController(text: 'Bheemesh');
     buyerAddressController =
         TextEditingController(text: 'Pedda Anadalapadu, Gadwal');
-    buyerStateController = TextEditingController(text: 'Andhra Pradesh');
-    buyerStateCodeController = TextEditingController(text: '28');
+    buyerStateController =
+        TextEditingController(text: 'Andhra Pradesh');
+    buyerStateCodeController = TextEditingController(
+        text: _lookupStateCode('Andhra Pradesh'));
 
     // ── Line Item ─────────────────────────────────────────────────────────────
     itemDescriptionController =
@@ -162,10 +272,11 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     bankAccountHolderNameController =
         TextEditingController(text: 'PMR TRADING');
     bankNameController =
-        TextEditingController(text: 'State Bank of India');
-    bankAccountNoController = TextEditingController(text: '123456789012');
+        TextEditingController(text: 'UNION BANK OF INDIA');
+    bankAccountNoController =
+        TextEditingController(text: '221411010000145');
     bankBranchIfscController =
-        TextEditingController(text: 'Kurnool / SBIN0012345');
+        TextEditingController(text: 'KALLUR BRANCH, KURNOOL / UBIN0822141');
 
     // ── Footer ────────────────────────────────────────────────────────────────
     signatureCompanyNameController =
@@ -178,6 +289,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
 
   @override
   void dispose() {
+    consigneeStateController.removeListener(_onConsigneeStateChanged);
+
     companyNameController.dispose();
     proprietorNameController.dispose();
     addressLine1Controller.dispose();
@@ -313,17 +426,14 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       billOfLading: billOfLadingController.text,
       motorVehicleNo: motorVehicleNoController.text,
       termsOfDelivery: termsOfDeliveryController.text,
-
-      // Consignee uses its own user-entered values
       consigneeName: consigneeNameController.text,
       consigneeAddress: consigneeAddressController.text,
       consigneeState: consigneeStateController.text,
-      consigneeStateCode: consigneeStateCodeController.text,
-      // Buyer name is user-entered; address/state/code copied from consignee
+      consigneeStateCode: consigneeStateCodeController.text, // auto-filled
       buyerName: buyerNameController.text,
       buyerAddress: consigneeAddressController.text,
       buyerState: consigneeStateController.text,
-      buyerStateCode: consigneeStateCodeController.text,
+      buyerStateCode: consigneeStateCodeController.text,     // auto-filled
       itemDescription: itemDescriptionController.text,
       hsnSac: hsnSacController.text,
       quantity: quantityController.text,
@@ -334,7 +444,6 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       isInterState: isInterState == true,
       gstHsnSac: gstHsnSacController.text,
       gstRate: gstRateController.text,
-      // Tax amounts are auto-calculated by withCalculations() — not passed here
       bankAccountHolderName: bankAccountHolderNameController.text,
       bankName: bankNameController.text,
       bankAccountNo: bankAccountNoController.text,
@@ -359,7 +468,6 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
         );
       }
     } catch (e, st) {
-      // FIX: capture StackTrace for easier debugging
       debugPrint('PDF generation error: $e\nStack: $st');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -404,7 +512,92 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
         ),
       );
 
-  // FIX: use == true instead of ! to avoid null dereference
+  /// State name field with live validation:
+  ///   • empty         → neutral (no message)
+  ///   • matched       → green "Code: XX" chip in suffix
+  ///   • no match      → red border + error text listing suggestions
+  Widget _stateField(
+    TextEditingController stateCtrl,
+    TextEditingController codeCtrl,
+    String label,
+  ) =>
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: ValueListenableBuilder<TextEditingValue>(
+          valueListenable: stateCtrl,
+          builder: (_, value, __) {
+            final trimmed = value.text.trim();
+            final code = _lookupStateCode(trimmed);
+            final bool isEmpty = trimmed.isEmpty;
+            final bool isMatched = code.isNotEmpty;
+
+            // Fuzzy suggestion: find state names that contain the typed text
+            final String? suggestion = (!isEmpty && !isMatched)
+                ? _suggestState(trimmed)
+                : null;
+
+            return TextFormField(
+              controller: stateCtrl,
+              decoration: InputDecoration(
+                labelText: label,
+                // Border turns red on error
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: (!isEmpty && !isMatched)
+                        ? Colors.red.shade400
+                        : Colors.grey.shade400,
+                    width: (!isEmpty && !isMatched) ? 1.5 : 1.0,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: (!isEmpty && !isMatched)
+                        ? Colors.red.shade600
+                        : Colors.blue,
+                    width: 2.0,
+                  ),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                // ── Suffix chip ──────────────────────────────────────────
+                suffix: isMatched
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.green.shade300),
+                        ),
+                        child: Text(
+                          'Code: $code',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      )
+                    : (!isEmpty)
+                        ? Icon(Icons.error_outline,
+                            color: Colors.red.shade400, size: 20)
+                        : null,
+                // ── Error / suggestion text ──────────────────────────────
+                errorText: (!isEmpty && !isMatched)
+                    ? (suggestion != null
+                        ? 'State not found. Did you mean "$suggestion"?'
+                        : 'State not recognised. Check spelling.')
+                    : null,
+                errorMaxLines: 2,
+              ),
+            );
+          },
+        ),
+      );
+
   Widget _taxBadge() {
     if (isInterState == null) return const SizedBox.shrink();
     final bool isInter = isInterState == true;
@@ -483,7 +676,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                 _field(placeOfReceiptByShipperController,
                     'Place of Receipt by Shipper'),
                 _field(cityPortOfLoadingController, 'City/Port of Loading'),
-                _field(cityPortOfDischargeController, 'City/Port of Discharge'),
+                _field(
+                    cityPortOfDischargeController, 'City/Port of Discharge'),
                 _field(billOfLadingController, 'Bill of Lading/LR-RR No.'),
                 _field(motorVehicleNoController, 'Motor Vehicle No.'),
                 _field(termsOfDeliveryController, 'Terms of Delivery'),
@@ -492,12 +686,18 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                 _sectionHeader('Consignee (Ship To)'),
                 _field(consigneeNameController, 'Consignee Name'),
                 _field(consigneeAddressController, 'Address'),
-                _field(consigneeStateController, 'State Name'),
-                _field(consigneeStateCodeController, 'State Code'),
+                // State name field — code is auto-filled (not shown separately)
+                _stateField(
+                  consigneeStateController,
+                  consigneeStateCodeController,
+                  'State Name',
+                ),
+                // NOTE: "State Code" field intentionally removed — auto-populated
 
                 // ── BUYER ─────────────────────────────────────────────────
                 _sectionHeader('Buyer (Bill To)'),
                 _field(buyerNameController, 'Buyer Name'),
+                // Buyer address / state / code mirror consignee — not shown
 
                 // ── LINE ITEM ─────────────────────────────────────────────
                 _sectionHeader('Line Item'),
