@@ -245,10 +245,18 @@ class PdfGenerator {
                         invoice.cityPortOfLoading ?? '',
                         'City/Port of Discharge',
                         invoice.cityPortOfDischarge ?? ''),
-                    _detailRow('Bill of Lading/LR-RR No.',
-                        invoice.billOfLading ?? '',
-                        'Motor Vehicle No.',
-                        invoice.motorVehicleNo ?? ''),
+                    // Bill of Lading / Motor Vehicle (Motor Vehicle No. is bold)
+                    pw.TableRow(children: [
+                      _detailCell('Bill of Lading/LR-RR No.'),
+                      _detailCell(invoice.billOfLading ?? ''),
+                      _detailCell('Motor Vehicle No.'),
+                      pw.Container(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(invoice.motorVehicleNo ?? '',
+                            style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold, fontSize: 8)),
+                      ),
+                    ]),
                   ],
                 ),
                 // Terms of Delivery – single full-width cell

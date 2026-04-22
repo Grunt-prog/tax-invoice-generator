@@ -1,7 +1,7 @@
 /// Model for a Tax Invoice.
 ///
 /// Tax type is controlled by [isInterState]:
-///   false → CGST + SGST (Andhra Pradesh / Telangana)
+///   false → CGST + SGST (Andhra Pradesh)
 ///   true  → IGST (other states)
 class InvoiceModel {
   // ── Seller ────────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ class InvoiceModel {
   final String? per;
 
   // ── Tax config ────────────────────────────────────────────────────────────
-  /// false = CGST+SGST (AP/Telangana), true = IGST (other states)
+  /// false = CGST+SGST (Andhra Pradesh), true = IGST (other states)
   final bool isInterState;
   final String? gstHsnSac;
   final String? gstRate;
@@ -157,25 +157,28 @@ class InvoiceModel {
     final double rt = double.tryParse(rate ?? '') ?? 0;
     final double calcAmount = qty * rt; // taxable base (qty × rate)
 
-    // Tax amounts are manually entered by the user — never auto-calculated.
-    final double userCgst =
-        isInterState ? 0 : (double.tryParse(cgstAmount ?? '') ?? 0);
-    final double userSgst =
-        isInterState ? 0 : (double.tryParse(sgstAmount ?? '') ?? 0);
-    final double userIgst =
-        isInterState ? (double.tryParse(igstAmount ?? '') ?? 0) : 0;
+    // Auto-calculate tax amounts
+    // CGST & SGST = quantity * rate * 9% each
+    // IGST = quantity * rate * 18%
+    final double calcCgst = isInterState ? 0 : (calcAmount * 0.09);
+    final double calcSgst = isInterState ? 0 : (calcAmount * 0.09);
+    final double calcIgst = isInterState ? (calcAmount * 0.18) : 0;
 
     final double calcTotalTax =
-        isInterState ? userIgst : (userCgst + userSgst);
+        isInterState ? calcIgst : (calcCgst + calcSgst);
     final double calcTotal = calcAmount + calcTotalTax;
 
+    // Rate (Inclusive of Tax) = Rate + 18%
+    final double calcRateInclTax = rt + (rt * 0.18);
+
     final String fmtAmount = _fmt(calcAmount);
-    final String fmtCgst = isInterState ? '' : _fmt(userCgst);
-    final String fmtSgst = isInterState ? '' : _fmt(userSgst);
-    final String fmtIgst = isInterState ? _fmt(userIgst) : '';
+    final String fmtCgst = isInterState ? '' : _fmt(calcCgst);
+    final String fmtSgst = isInterState ? '' : _fmt(calcSgst);
+    final String fmtIgst = isInterState ? _fmt(calcIgst) : '';
     final String fmtTotalTax = _fmt(calcTotalTax);
     final String fmtTotal = _fmt(calcTotal);
     final String fmtQty = '${_fmtQty(qty)} ${quantityUnit ?? ''}'.trim();
+    final String fmtRateInclTax = _fmt(calcRateInclTax);
 
     return InvoiceModel(
       companyName: companyName,
@@ -217,7 +220,7 @@ class InvoiceModel {
       hsnSac: hsnSac,
       quantity: quantity,
       quantityUnit: quantityUnit,
-      rateInclTax: rateInclTax,
+      rateInclTax: fmtRateInclTax,
       rate: rate,
       per: per,
       isInterState: isInterState,

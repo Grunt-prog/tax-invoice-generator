@@ -3,7 +3,7 @@ import '../models/invoice_model.dart';
 import '../services/pdf_generator.dart';
 
 class InvoiceFormScreen extends StatefulWidget {
-  const InvoiceFormScreen({Key? key}) : super(key: key);
+  const InvoiceFormScreen({super.key});
 
   @override
   State<InvoiceFormScreen> createState() => _InvoiceFormScreenState();
@@ -13,7 +13,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   late InvoiceModel invoice;
   bool isGenerating = false;
 
-  /// null = not yet chosen, false = AP/Telangana (CGST+SGST), true = Other (IGST)
+  /// null = not yet chosen, false = Andhra (CGST+SGST), true = Other (IGST)
   bool? isInterState;
 
   // ── Seller ────────────────────────────────────────────────────────────────
@@ -82,10 +82,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   late TextEditingController signatureCompanyNameController;
   late TextEditingController declarationTextController;
 
-  // ── Tax Amounts (manually entered by user) ─────────────────────────────────
-  late TextEditingController cgstAmountController;
-  late TextEditingController sgstAmountController;
-  late TextEditingController igstAmountController;
+  // ── Tax Amounts (auto-calculated, not shown in UI) ──────────────────────────
+  // These are no longer manually entered — auto-calculated by withCalculations()
 
   @override
   void initState() {
@@ -133,17 +131,18 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
 
     // ── Consignee ─────────────────────────────────────────────────────────────
     consigneeNameController = TextEditingController(text: 'Bheemesh');
+    // Consignee address will be synced with Buyer address
     consigneeAddressController =
         TextEditingController(text: 'Pedda Anadalapadu, Gadwal');
-    consigneeStateController = TextEditingController(text: 'Telangana');
-    consigneeStateCodeController = TextEditingController(text: '36');
+    consigneeStateController = TextEditingController(text: 'Andhra Pradesh');
+    consigneeStateCodeController = TextEditingController(text: '28');
 
     // ── Buyer ─────────────────────────────────────────────────────────────────
     buyerNameController = TextEditingController(text: 'Bheemesh');
     buyerAddressController =
         TextEditingController(text: 'Pedda Anadalapadu, Gadwal');
-    buyerStateController = TextEditingController(text: 'Telangana');
-    buyerStateCodeController = TextEditingController(text: '36');
+    buyerStateController = TextEditingController(text: 'Andhra Pradesh');
+    buyerStateCodeController = TextEditingController(text: '28');
 
     // ── Line Item ─────────────────────────────────────────────────────────────
     itemDescriptionController =
@@ -158,10 +157,6 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     // ── GST ───────────────────────────────────────────────────────────────────
     gstHsnSacController = TextEditingController(text: '6802');
     gstRateController = TextEditingController(text: '18');
-    // Dummy tax amounts: 18% of 24,000 = 4,320 (IGST) or 2,160+2,160 (CGST+SGST)
-    cgstAmountController = TextEditingController(text: '2160.00');
-    sgstAmountController = TextEditingController(text: '2160.00');
-    igstAmountController = TextEditingController(text: '4320.00');
 
     // ── Bank Details ──────────────────────────────────────────────────────────
     bankAccountHolderNameController =
@@ -233,13 +228,10 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     bankBranchIfscController.dispose();
     signatureCompanyNameController.dispose();
     declarationTextController.dispose();
-    cgstAmountController.dispose();
-    sgstAmountController.dispose();
-    igstAmountController.dispose();
     super.dispose();
   }
 
-  /// Show dialog to pick AP/Telangana (CGST+SGST) or Other (IGST)
+  /// Show dialog to pick Andhra (CGST+SGST) or Other (IGST)
   Future<void> _showStateDialog() async {
     await showDialog(
       context: context,
@@ -262,7 +254,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                 Navigator.of(ctx).pop();
               },
               child: const Text(
-                'Andhra Pradesh / Telangana\n(CGST + SGST)',
+                'Andhra\n(CGST + SGST)',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white),
               ),
@@ -321,14 +313,16 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       billOfLading: billOfLadingController.text,
       motorVehicleNo: motorVehicleNoController.text,
       termsOfDelivery: termsOfDeliveryController.text,
-      consigneeName: consigneeNameController.text,
-      consigneeAddress: consigneeAddressController.text,
-      consigneeState: consigneeStateController.text,
-      consigneeStateCode: consigneeStateCodeController.text,
+
       buyerName: buyerNameController.text,
       buyerAddress: buyerAddressController.text,
       buyerState: buyerStateController.text,
       buyerStateCode: buyerStateCodeController.text,
+      // Sync Consignee address with Buyer (only name differs)
+      consigneeName: consigneeNameController.text,
+      consigneeAddress: buyerAddressController.text,
+      consigneeState: buyerStateController.text,
+      consigneeStateCode: buyerStateCodeController.text,
       itemDescription: itemDescriptionController.text,
       hsnSac: hsnSacController.text,
       quantity: quantityController.text,
@@ -339,10 +333,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       isInterState: isInterState == true,
       gstHsnSac: gstHsnSacController.text,
       gstRate: gstRateController.text,
-      // Tax amounts are passed from user input — NOT auto-calculated
-      cgstAmount: cgstAmountController.text,
-      sgstAmount: sgstAmountController.text,
-      igstAmount: igstAmountController.text,
+      // Tax amounts are auto-calculated by withCalculations() — not passed here
       bankAccountHolderName: bankAccountHolderNameController.text,
       bankName: bankNameController.text,
       bankAccountNo: bankAccountNoController.text,
@@ -424,7 +415,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        isInter ? 'IGST (Other State)' : 'CGST + SGST (AP/Telangana)',
+        isInter ? 'IGST (Other State)' : 'CGST + SGST (AP)',
         style: TextStyle(
           fontSize: 11,
           color: isInter ? Colors.orange.shade800 : Colors.green.shade800,
@@ -517,8 +508,6 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                 _field(quantityController, 'Quantity',
                     keyboardType: TextInputType.number),
                 _field(quantityUnitController, 'Quantity Unit (e.g. sqf)'),
-                _field(rateInclTaxController, 'Rate (Incl. of Tax)',
-                    keyboardType: TextInputType.number),
                 _field(rateController, 'Rate',
                     keyboardType: TextInputType.number),
                 _field(perController, 'Per (e.g. sqf)'),
@@ -535,16 +524,6 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                       : 'Total GST Rate % (e.g. 18 → 9% CGST + 9% SGST)',
                   keyboardType: TextInputType.number,
                 ),
-                // Tax amount fields — manually entered by user
-                if (isInterState == true) ...[                  
-                  _field(igstAmountController, 'IGST Amount (₹)',
-                      keyboardType: TextInputType.number),
-                ] else if (isInterState == false) ...[                  
-                  _field(cgstAmountController, 'CGST Amount (₹)',
-                      keyboardType: TextInputType.number),
-                  _field(sgstAmountController, 'SGST Amount (₹)',
-                      keyboardType: TextInputType.number),
-                ],
 
                 // ── BANK DETAILS ──────────────────────────────────────────
                 _sectionHeader("Company's Bank Details"),
