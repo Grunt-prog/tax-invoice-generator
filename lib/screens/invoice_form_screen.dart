@@ -149,10 +149,10 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
         TextEditingController(text: 'Granites Slabs');
     hsnSacController = TextEditingController(text: '6802');
     quantityController = TextEditingController(text: '400');
-    quantityUnitController = TextEditingController(text: 'sqf');
+    quantityUnitController = TextEditingController(text: 'sft');
     rateInclTaxController = TextEditingController(text: '70.80');
     rateController = TextEditingController(text: '60.00');
-    perController = TextEditingController(text: 'sqf');
+    perController = TextEditingController(text: 'sft');
 
     // ── GST ───────────────────────────────────────────────────────────────────
     gstHsnSacController = TextEditingController(text: '6802');
@@ -494,23 +494,16 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                 _field(consigneeStateController, 'State Name'),
                 _field(consigneeStateCodeController, 'State Code'),
 
-                // ── BUYER ─────────────────────────────────────────────────
-                _sectionHeader('Buyer (Bill To)'),
-                _field(buyerNameController, 'Buyer Name'),
-                _field(buyerAddressController, 'Address'),
-                _field(buyerStateController, 'State Name'),
-                _field(buyerStateCodeController, 'State Code'),
-
                 // ── LINE ITEM ─────────────────────────────────────────────
                 _sectionHeader('Line Item'),
                 _field(itemDescriptionController, 'Item Description'),
                 _field(hsnSacController, 'HSN/SAC'),
                 _field(quantityController, 'Quantity',
                     keyboardType: TextInputType.number),
-                _field(quantityUnitController, 'Quantity Unit (e.g. sqf)'),
+                _field(quantityUnitController, 'Quantity Unit (e.g. sft)'),
                 _field(rateController, 'Rate',
                     keyboardType: TextInputType.number),
-                _field(perController, 'Per (e.g. sqf)'),
+                _field(perController, 'Per (e.g. sft)'),
 
                 // ── GST ───────────────────────────────────────────────────
                 _sectionHeader(isInterState == true
