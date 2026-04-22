@@ -314,15 +314,16 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       motorVehicleNo: motorVehicleNoController.text,
       termsOfDelivery: termsOfDeliveryController.text,
 
-      buyerName: buyerNameController.text,
-      buyerAddress: buyerAddressController.text,
-      buyerState: buyerStateController.text,
-      buyerStateCode: buyerStateCodeController.text,
-      // Sync Consignee address with Buyer (only name differs)
+      // Consignee uses its own user-entered values
       consigneeName: consigneeNameController.text,
-      consigneeAddress: buyerAddressController.text,
-      consigneeState: buyerStateController.text,
-      consigneeStateCode: buyerStateCodeController.text,
+      consigneeAddress: consigneeAddressController.text,
+      consigneeState: consigneeStateController.text,
+      consigneeStateCode: consigneeStateCodeController.text,
+      // Buyer name is user-entered; address/state/code copied from consignee
+      buyerName: buyerNameController.text,
+      buyerAddress: consigneeAddressController.text,
+      buyerState: consigneeStateController.text,
+      buyerStateCode: consigneeStateCodeController.text,
       itemDescription: itemDescriptionController.text,
       hsnSac: hsnSacController.text,
       quantity: quantityController.text,
