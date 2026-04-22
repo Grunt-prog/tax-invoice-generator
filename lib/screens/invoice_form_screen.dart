@@ -494,6 +494,10 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                 _field(consigneeStateController, 'State Name'),
                 _field(consigneeStateCodeController, 'State Code'),
 
+                // ── BUYER ─────────────────────────────────────────────────
+                _sectionHeader('Buyer (Bill To)'),
+                _field(buyerNameController, 'Buyer Name'),
+
                 // ── LINE ITEM ─────────────────────────────────────────────
                 _sectionHeader('Line Item'),
                 _field(itemDescriptionController, 'Item Description'),
