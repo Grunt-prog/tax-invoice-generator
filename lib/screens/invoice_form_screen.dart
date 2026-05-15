@@ -184,6 +184,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     _initControllers();
     // Auto-populate state codes whenever the state name fields change.
     consigneeStateController.addListener(_onConsigneeStateChanged);
+    buyerStateController.addListener(_onBuyerStateChanged);
     // Show state selection dialog on first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) => _showStateDialog());
   }
@@ -194,8 +195,12 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     final code = _lookupStateCode(consigneeStateController.text);
     if (code.isNotEmpty && consigneeStateCodeController.text != code) {
       consigneeStateCodeController.text = code;
-      // buyer state/code mirrors consignee — keep in sync
-      buyerStateController.text = consigneeStateController.text;
+    }
+  }
+
+  void _onBuyerStateChanged() {
+    final code = _lookupStateCode(buyerStateController.text);
+    if (code.isNotEmpty && buyerStateCodeController.text != code) {
       buyerStateCodeController.text = code;
     }
   }
@@ -245,14 +250,11 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     consigneeStateCodeController = TextEditingController(
         text: _lookupStateCode('Andhra Pradesh'));
 
-    // ── Buyer (mirrors consignee state/code; only name is user-entered) ───────
-    buyerNameController = TextEditingController(text: 'Bheemesh');
-    buyerAddressController =
-        TextEditingController(text: 'Pedda Anadalapadu, Gadwal');
-    buyerStateController =
-        TextEditingController(text: 'Andhra Pradesh');
-    buyerStateCodeController = TextEditingController(
-        text: _lookupStateCode('Andhra Pradesh'));
+    // ── Buyer (independent fields; falls back to consignee if left empty) ─────
+    buyerNameController = TextEditingController(text: '');
+    buyerAddressController = TextEditingController(text: '');
+    buyerStateController = TextEditingController(text: '');
+    buyerStateCodeController = TextEditingController(text: '');
 
     // ── Line Item ─────────────────────────────────────────────────────────────
     itemDescriptionController =
@@ -290,6 +292,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   @override
   void dispose() {
     consigneeStateController.removeListener(_onConsigneeStateChanged);
+    buyerStateController.removeListener(_onBuyerStateChanged);
 
     companyNameController.dispose();
     proprietorNameController.dispose();
@@ -430,10 +433,18 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       consigneeAddress: consigneeAddressController.text,
       consigneeState: consigneeStateController.text,
       consigneeStateCode: consigneeStateCodeController.text, // auto-filled
-      buyerName: buyerNameController.text,
-      buyerAddress: consigneeAddressController.text,
-      buyerState: consigneeStateController.text,
-      buyerStateCode: consigneeStateCodeController.text,     // auto-filled
+      buyerName: buyerNameController.text.trim().isEmpty
+          ? consigneeNameController.text
+          : buyerNameController.text,
+      buyerAddress: buyerAddressController.text.trim().isEmpty
+          ? consigneeAddressController.text
+          : buyerAddressController.text,
+      buyerState: buyerStateController.text.trim().isEmpty
+          ? consigneeStateController.text
+          : buyerStateController.text,
+      buyerStateCode: buyerStateCodeController.text.trim().isEmpty
+          ? consigneeStateCodeController.text
+          : buyerStateCodeController.text,
       itemDescription: itemDescriptionController.text,
       hsnSac: hsnSacController.text,
       quantity: quantityController.text,
@@ -696,8 +707,36 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
 
                 // ── BUYER ─────────────────────────────────────────────────
                 _sectionHeader('Buyer (Bill To)'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 16, color: Colors.amber.shade800),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Leave fields empty to auto-copy from Consignee details above.',
+                            style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 _field(buyerNameController, 'Buyer Name'),
-                // Buyer address / state / code mirror consignee — not shown
+                _field(buyerAddressController, 'Buyer Address'),
+                _stateField(
+                  buyerStateController,
+                  buyerStateCodeController,
+                  'Buyer State Name',
+                ),
 
                 // ── LINE ITEM ─────────────────────────────────────────────
                 _sectionHeader('Line Item'),
